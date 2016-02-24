@@ -1,0 +1,49 @@
+$usuarios=ls C:\Users\Andy\Documents\AA-Retamar\ISO\powershell\login\usuarios\ -name
+$contraseña=Get-Content C:\Users\Andy\Documents\AA-Retamar\ISO\powershell\login\usuarios\andy.txt
+
+function loginH
+{
+  param
+  (
+    [Parameter(Mandatory=$true, ValueFromPipeline=$true)]
+    [String[]]
+    [AllowEmptyString()] 
+    $user,$pass
+  )
+
+  begin
+  {
+    Write-Host "Principio de login"
+    $usercorrecto=$usuarios
+    #El pass en MD5
+    #$passcorrecto="pass"
+    $passcorrecto=$contraseña
+  }
+
+  process
+  {
+   #Realizar el MD5 del pass introducido por el usuariO
+   [Reflection.Assembly]::LoadWithPartialName("System.Web")
+   $pass
+   if($user -eq $usercorrecto -and [System.Web.Security.FormsAuthentication]::HashPasswordForStoringInConfigFile($pass, "MD5") -eq $passcorrecto)
+    {
+        $ok=1
+    }
+    else
+    {
+        $ok=0
+    }
+  }
+  end
+  {
+   if($ok)
+    {
+        Write-Host "User correcto"
+    }
+    else
+    {
+        Write-Host "User no correcto"
+    }
+    Write-Host "Fin de login"
+  }
+}
