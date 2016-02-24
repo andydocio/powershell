@@ -1,0 +1,5 @@
+$user=Read-Host "Usuario"
+$pass=Read-Host "Contraseña"
+
+[Reflection.Assembly]::LoadWithPartialName("System.Web")
+[System.Web.Security.FormsAuthentication]::HashPasswordForStoringInConfigFile("$pass", "MD5") > C:\Users\Andy\Documents\AA-Retamar\ISO\powershell\login\usuarios\"$user".txt
