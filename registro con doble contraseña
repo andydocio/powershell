@@ -1,0 +1,12 @@
+$user=Read-Host "Usuario"
+$pass=Read-Host "Contraseña"
+
+
+New-item -ItemType dir -path C:\Users\Andy\Documents\AA-Retamar\ISO\powershell\login\usuarios -Name $user
+
+[Reflection.Assembly]::LoadWithPartialName("System.Web")
+[System.Web.Security.FormsAuthentication]::HashPasswordForStoringInConfigFile("$pass", "MD5") > C:\Users\Andy\Documents\AA-Retamar\ISO\powershell\login\usuarios\$user\md5
+
+[Reflection.Assembly]::LoadWithPartialName("System.Web")
+[System.Web.Security.FormsAuthentication]::HashPasswordForStoringInConfigFile("$pass", "SHA1") > C:\Users\Andy\Documents\AA-Retamar\ISO\powershell\login\usuarios\$user\sha1
+ 
