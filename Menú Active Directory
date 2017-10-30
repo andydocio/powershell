@@ -1,0 +1,185 @@
+do{
+clear
+Write-Host "Opcion 1: Agregar usuario"
+Write-Host "Opcion 2: Crear unidad organizativa"
+Write-Host "Opcion 3: Crear grupo"
+Write-Host "Opcion 4: Introducir usuario en grupo"
+Write-Host "Opcion 5: Exportar usuarios de grupo"
+Write-Host "Opcion 6: Exportar informacion del dominio"
+Write-Host "Opcion 7: Salir"
+
+$opcion= Read-Host "Escoja una opcion"
+" "
+$running=0
+switch($opcion){
+    1{
+        Write-Host Crear usuario:
+        $name= Read-Host "Nombre de usuario"
+        $comprobacion=(Get-ADUser -Filter * | Where-Object {$_.name -eq $name} | measure).Count
+                 if($comprobacion -eq 0)
+                 {
+                    $sam= Read-Host "SAM"
+                    $comprobacionsam = (Get-ADUser -Filter * | Where-Object {$_.samaccountname -eq $sam} | measure).Count
+                        if($comprobacionsam -eq 0)
+                        {
+                            $enable= Read-Host "¿Activa? (s/n)"
+                            $pass= Read-Host -AsSecureString "Contraseña"
+                            
+                            switch($enable){
+                            s{
+                            New-ADUser -SamAccountName $sam -Name $name -DisplayName $name -Path "OU=Usuarios,OU=ASIRLAB,DC=retamar,DC=local" -AccountPassword $pass -Enabled $True -PasswordNeverExpires $True -PassThru
+                            Write-Host "Pulsa ENTER para continuar" -ForegroundColor “Yellow”
+                            Read-Host
+                            break
+                            }
+                            n{
+                            New-ADUser -SamAccountName $sam -Name $name -DisplayName $name -Path "OU=Usuarios,OU=ASIRLAB,DC=retamar,DC=local" -AccountPassword $pass -Enabled $false -PasswordNeverExpires $True -PassThru
+                            Write-host "Pulsa ENTER para continuar" -ForegroundColor “Yellow”
+                            Read-Host
+                            }
+                            default{
+                              Write-Host "Opcion incorrecta"
+                            break
+                             }
+                            }
+                        elseif($comprobacionsam -gt 0)
+                            {
+                                "El SAM ya existe"
+                            }
+                          }
+                    elseif($comprobacion -gt 0)
+                    {
+                        "El nombre de usuario ya existe"
+                    }
+                }
+        }
+                 
+        
+           
+
+    2{
+        Write-host Crear unidad organizativa:
+        $unidad= Read-Host "Nombre"
+        $comp = (Get-ADOrganizationalUnit -Filter * -Properties * | Where-Object {$_.Name -eq $unidad} | measure).Count
+        if ($comp -eq 0)
+            {                
+                 $descripcion= Read-Host "Descripcion"
+                 New-ADOrganizationalUnit -Name $unidad -Path "DC=retamar,DC=local" -Description $descripcion -ProtectedFromAccidentalDeletion $false -PassThru
+                 ## Ahora le hemos metido una descripción y la protección contra borrado accidental esta deshabilitada.
+                 Write-host "Pulsa ENTER para continuar" -ForegroundColor “Yellow”
+                 Read-Host
+            }
+            else{'Unidad Organizativa ya existe'}
+
+        
+        
+        break
+    }
+
+    3{
+        Write-host Crear grupo
+        $nombre= Read-Host "Nombre"
+        "1-Global
+2-Universal"
+        $ambito= Read-Host "Ambito (1/2)"
+        if ($ambito -eq “1”)
+        {$ambito="Global"} 
+        elseif ($ambito -eq “2”)
+        {$ambito="Universal"}
+        $uo=Read-Host "Unidad organizativa donde crear el grupo"
+        $Path="DC=retamar,DC=retamar"
+        $Uo = "OU="+ $Uo + “,” + $Path
+        $tipo= Read-Host "Tipo"
+        New-ADGroup -Name $nombre  -SamAccountName $Name -GroupCategory Security -GroupScope $ambito -DisplayName $name -Cgreenential $AdminCgreenentials -Path “$uo” -PassThru
+        Write-Host "Pulsa ENTER para continuar" -ForegroundColor “Yellow”
+        Read-Host
+        break
+    }
+
+    4{
+        Write-host Introducir un usuario en grupo
+
+        ############  Listar usuarios ##############
+        $array=(Get-ADUser -filter *).samaccountname
+        $i=0
+        $array= $array | sort
+        foreach ($elemento in $array){
+        Write-Host $i"-"$elemento
+        $i++
+        }
+        $user=Read-Host "
+        Introduzca el numero correspondiente al usuario"
+        $user=$array[$user]
+        Write-Host "  Ha seleccionado al usuario:"$user -ForegroundColor “green”
+        Write-Host "Pulsa ENTER para continuar" -ForegroundColor “Yellow”
+        Read-Host 
+
+        #############  Listar grupos #################
+        $array=(Get-ADGroup -filter *).samaccountname
+        $i=0
+        $array= $array | sort
+        foreach ($elemento in $array){
+        Write-Host $i"-"$elemento
+        $i++
+        }
+        $grupo=Read-Host " Introduzca el numero correspondiente al grupo"
+        $grupo=$array[$grupo]
+        Write-Host "  Ha seleccionado al grupo:"$grupo -ForegroundColor “green”
+        Write-Host "Pulsa ENTER para continuar" -ForegroundColor “Yellow”
+        Read-Host
+
+        ##############  Comprobacion ###################
+        Write-Host "Se va a agregar el usuario:"
+        Write-Host  $User -ForegroundColor “green"
+        Write-Host "Al grupo:"
+        Write-Host $grupo -ForegroundColor “green"
+        Write-Host "Pulsa ENTER para continuar" -ForegroundColor “Yellow”
+        Read-Host
+
+        #############  Añadir al grupo #################
+        Add-ADGroupMember -Identity $grupo -Members $User
+        Write-Host ‘Los usuarios del grupo seleccionado son’
+        (Get-ADGroupMember -Identity $grupo).samaccountname
+        Write-host "Pulsa ENTER para continuar" -ForegroundColor “Yellow”
+        Read-Host
+        break
+    }
+
+    5{
+        Write-Host "Exportar usuarios de un grupo"
+        $array=(Get-ADGroup -filter *).samaccountname
+        $i=0
+        $array= $array | sort
+        foreach ($elemento in $array){
+        echo $i’-‘$elemento
+        $i++
+        }
+        $grupo=Read-Host "Introduzca el numero correspondiente al grupo"
+        $grupo=$array[$grupo]
+        Get-ADGroupMember $grupo -recursive | Select-Object name, SamAccountName, Enabled >> "usuarios-$grupo.txt"
+        Write-Host "Pulsa ENTER para continuar" -ForegroundColor “Yellow”
+        Read-Host
+        break
+    }
+
+    
+    6{
+        $grupo=Read-Host "Grupo"
+        Get-ADGroupMember $grupo -recursive | Select-Object name, SamAccountName, Enabled >> "usuarios-$grupo.txt"
+        Write-Host "Pulsa ENTER para continuar" -ForegroundColor “Yellow”
+        Read-Host
+        break
+    }
+
+
+    default{
+        Write-Host "Opcion incorrecta"
+        break
+    }
+}
+}while($opcion -ne 4)
+
+
+
+###### Agregar usuarios a grupos: http://blogs.itpro.es/readyplayerone/2015/07/14/agregar-usuarios-a-grupos-con-powershell/
+###### listado y creacion de grupos: http://blogs.itpro.es/readyplayerone/2015/07/08/listado-y-creacin-de-grupos-con-powershell/
